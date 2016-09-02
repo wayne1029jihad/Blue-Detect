@@ -19,11 +19,18 @@ This code for NTHU Nvision Team
 // namespace
 using namespace std;
 using namespace openni;
-  
+using namespace cv;
+void onMouse(int event,int x,int y,int flags,void* param);
+CvPoint VertexOne,VertexThree;
+CvPoint mouseC;
 int main( int argc, char **argv )
 {
-  // 1. Initial OpenNI
-  if( OpenNI::initialize() != STATUS_OK )
+VertexOne=cvPoint(0,0);
+VertexThree=cvPoint(0,0);
+mouseC = cvPoint(-100,-100);  
+// 1. initial openni
+
+  if(OpenNI::initialize() != STATUS_OK)
   {
     cerr << "OpenNI Initial Error: " 
          << OpenNI::getExtendedError() << endl;
@@ -40,6 +47,7 @@ int main( int argc, char **argv )
   }
   
   // 3. Create depth stream
+    /*
   VideoStream mDepthStream;
   if( mDevice.hasSensor( SENSOR_DEPTH ) )
   {
@@ -69,7 +77,7 @@ int main( int argc, char **argv )
     cerr << "ERROR: This device does not have depth sensor" << endl;
     return -1;
   }
-  
+  */
   // 4. Create color stream
   VideoStream mColorStream;
   if( mDevice.hasSensor( SENSOR_COLOR ) )
@@ -77,23 +85,31 @@ int main( int argc, char **argv )
     if( mColorStream.create( mDevice, SENSOR_COLOR ) == STATUS_OK )
     {
       // 4a. set video mode
-      VideoMode mMode;
-      mMode.setResolution( 640, 480 );
+     VideoMode mMode;
+     cout<< mMode.getPixelFormat()<<endl;
+     cout<< mMode.getResolutionX()<<endl;
+
+   mMode.setResolution( 1280,960  );
+//      mMode.setResolution(640,480);
       mMode.setFps( 30 );
-      mMode.setPixelFormat( PIXEL_FORMAT_RGB888 );
-  
+      mMode.setPixelFormat( PIXEL_FORMAT_JPEG );
+      mMode.setPixelFormat(PIXEL_FORMAT_RGB888);
+      cout<< mMode.getPixelFormat()<<endl;
+      cout<< mMode.getResolutionX()<<endl;
       if( mColorStream.setVideoMode( mMode) != STATUS_OK )
       {
         cout << "Can't apply VideoMode: " 
              << OpenNI::getExtendedError() << endl;
       }
+    /*
+          // 4b. image registration
+        if( mDevice.isImageRegistrationModeSupported(
+               IMAGE_REGISTRATION_DEPTH_TO_COLOR ) )
+        {
+         mDevice.setImageRegistrationMode( IMAGE_REGISTRATION_DEPTH_TO_COLOR );
+        }
+    */                              
   
-      // 4b. image registration
-      if( mDevice.isImageRegistrationModeSupported(
-              IMAGE_REGISTRATION_DEPTH_TO_COLOR ) )
-      {
-        mDevice.setImageRegistrationMode( IMAGE_REGISTRATION_DEPTH_TO_COLOR );
-      }
     }
     else
     {
@@ -102,17 +118,16 @@ int main( int argc, char **argv )
       return -1;
     }
   }
-  
   // 5. create OpenCV Window
-  cv::namedWindow( "Depth Image",  CV_WINDOW_AUTOSIZE );
-  cv::namedWindow( "Color Image",  CV_WINDOW_AUTOSIZE );
-  
+ // cv::namedWindow( "Depth Image",  CV_WINDOW_NORMAL );
+  cv::namedWindow( "Color Image",  CV_WINDOW_NORMAL );
+cvSetMouseCallback("Color Image",onMouse,NULL);//????callback??  
   // 6. start
   VideoFrameRef  mColorFrame;
-  VideoFrameRef  mDepthFrame;
-  mDepthStream.start();
+ // VideoFrameRef  mDepthFrame;
+ // mDepthStream.start();
   mColorStream.start();
-  int iMaxDepth = mDepthStream.getMaxPixelValue();
+ // int iMaxDepth = mDepthStream.getMaxPixelValue();
   while( true )
   {
     // 7. check is color stream is available
@@ -132,19 +147,20 @@ int main( int argc, char **argv )
         // Detect blue
         std::vector<cv::Rect> rects;
         color_detect::find_blue(cImageBGR, rects, 
-            100, // Minimum area threshold
+            800, // Minimum area threshold
             cv::Scalar(100, 150, 100), // Blue lower bound
             cv::Scalar(140, 255, 255) // Blue upper bound 
         );
         for(auto rect : rects) {
             cv::rectangle(cImageBGR, rect.tl(), rect.br(), cv::Scalar(0, 255, 0), 2);
         } 
+        circle(cImageBGR,mouseC,10,Scalar(0,0,255), 4);    
 
         // 7d. show image
         cv::imshow( "Color Image", cImageBGR );
       }
     }
-  
+  /*
     // 8a. get depth frame
     if( mDepthStream.readFrame( &mDepthFrame ) == STATUS_OK )
     {
@@ -158,17 +174,27 @@ int main( int argc, char **argv )
       // 8d. show image
       cv::imshow( "Depth Image", mScaledDepth );
     }
-  
+  */
     // 6a. check keyboard
     if( cv::waitKey( 1 ) == 'q' )
       break;
   }
   
   // 9. stop
-  mDepthStream.destroy();
+ // mDepthStream.destroy();
   mColorStream.destroy();
   mDevice.close();
   OpenNI::shutdown();
   
   return 0;
+}
+
+void onMouse(int event,int x,int y,int flag,void* param){
+   
+    
+if(event==CV_EVENT_LBUTTONDOWN||event==CV_EVENT_RBUTTONDOWN){
+        VertexOne=cvPoint(x,y);
+        cout<<x<< " "<<y<<endl;   
+        mouseC = cvPoint(x,y);
+ }
 }
