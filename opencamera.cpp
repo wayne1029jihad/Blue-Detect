@@ -4,7 +4,12 @@ This code for NTHU Nvision Team
 // STL Header
 #include <iostream>
 #include <vector>
-  
+
+//Ros Header
+#include "ros/ros.h"
+#include "std_msgs/Float32MultiArray.h"
+#include <sstream>
+#include "stdio.h"   
 // OpenCV Header
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -16,6 +21,9 @@ This code for NTHU Nvision Team
 // Color detection
 #include "color_detect.hpp"
 
+// ROS Wrapper
+#include "ros_wrapper.hpp"
+
 // namespace
 using namespace std;
 using namespace openni;
@@ -23,11 +31,23 @@ using namespace cv;
 void onMouse(int event,int x,int y,int flags,void* param);
 CvPoint VertexOne,VertexThree;
 CvPoint mouseC;
+//ros::Publisher * chatter_pub;
+//ros::Rate loop_rate(10);  
+
+RosWrapper * g_ros_wrapper;
+
 int main( int argc, char **argv )
 {
 VertexOne=cvPoint(0,0);
 VertexThree=cvPoint(0,0);
-mouseC = cvPoint(-100,-100);  
+mouseC = cvPoint(-100,-100);
+
+// 0. initial ros
+    //ros::init(argc, argv, "Blue_Detect");      
+    //ros::NodeHandle n;
+    //chatter_pub = new ros::Publisher;
+    //*chatter_pub = n.advertise<std_msgs::Float32MultiArray>("chatter",1000);
+   g_ros_wrapper = new RosWrapper(argc, argv, "blue_detect", "chatter");
 // 1. initial openni
 
   if(OpenNI::initialize() != STATUS_OK)
@@ -189,12 +209,20 @@ cvSetMouseCallback("Color Image",onMouse,NULL);//????callback??
   return 0;
 }
 
-void onMouse(int event,int x,int y,int flag,void* param){
-   
-    
-if(event==CV_EVENT_LBUTTONDOWN||event==CV_EVENT_RBUTTONDOWN){
+void onMouse(int event,int x,int y,int flag,void* param){   
+    std_msgs::Float32MultiArray arr;
+    if(event==CV_EVENT_LBUTTONDOWN||event==CV_EVENT_RBUTTONDOWN){
+        arr.data.clear();
         VertexOne=cvPoint(x,y);
         cout<<x<< " "<<y<<endl;   
         mouseC = cvPoint(x,y);
- }
+        arr.data.push_back(100);
+        arr.data.push_back(x);
+        arr.data.push_back(y);
+        arr.data.push_back(0);
+        //chatter_pub->publish(arr);
+        //ros::spinOnce();
+        //loop_rate.sleep();
+        g_ros_wrapper->publish<std_msgs::Float32MultiArray>(arr);
+    }
 }
